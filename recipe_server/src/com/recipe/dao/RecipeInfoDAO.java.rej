@@ -1,0 +1,14 @@
+diff a/recipe_server/src/com/recipe/dao/RecipeInfoDAO.java b/recipe_server/src/com/recipe/dao/RecipeInfoDAO.java	(rejected hunks)
+@@ -59,9 +59,9 @@
+ 					recipeInfo.setPoint(pt);
+ 				}
+ 			}
+-//			if (recipeInfo.getRecipeName() == null) {
+-//				throw new FindException("찾은 레시피가 없습니다");
+-//			}
++			if (recipeInfo.getRecipeName() == null) {
++				throw new FindException("찾은 레시피가 없습니다");
++			}
+ 			
+ 		} catch (SQLException e) {
+ 

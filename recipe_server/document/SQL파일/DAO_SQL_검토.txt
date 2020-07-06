@@ -1,0 +1,325 @@
+--code 로 찾기
+SELECT * FROM RECIPE_INFO WHERE recipe_code = '134';
+--name 으로 찾기
+SELECT * FROM RECIPE_INFO WHERE recipe_name = '주먹밥';
+--like로 해주세요
+
+--재료로 찾기
+SELECT RI.RECIPE_CODE, RIN.RECIPE_NAME
+FROM RECIPE_INGREDIENT RI
+JOIN RECIPE_INFO RIN ON RI.recipe_code = RIN.recipe_code
+JOIN INGREDIENT ING ON ING.ing_code = RI.ing_code
+WHERE ING.ing_name LIKE '%김치%';
+
+--입력받은 재료를 포함한 모든 레시피 정보를 가져온다
+"SELECT 
+    *
+FROM
+    recipe_info
+WHERE
+    recipe_code in (
+        SELECT
+            recipe_code
+        FROM
+            recipe_ingredient
+        WHERE
+            ing_code = (
+                SELECT
+                    ing_code
+                FROM
+                    ingredient
+                WHERE
+                    ing_name like ?
+            )
+        )"
+
+"SELECT
+    r.*
+FROM
+    recipe_info r
+    join recipe_ingredient ri on ( r.recipe_code = ri.recipe_code )
+    join ingredient i on ( i.ing_code = ri.ing_code )"
+-- ? 에 "%" + 매개변수 + "%"를 넣으면 될 것 같다
+--실제 메소드에서는 이렇게 select를 하고나서 다시 각 레시피에 맞는 recipe_info를 만들어주어야해서, 위의 코드로 찾기 메소드를 재사용하는 방향으로 하면 될듯
+
+--좋아요/싫어요
+SELECT * 
+FROM POINT ;
+----------------------------------------------------------------------------이건 없어도 됨
+--상세정보 보기
+SELECT rif.recipe_name, ri.recipe_code, ing.ing_name, fav.like_count, fav.dislike_counT
+FROM recipe_ingredient ri
+LEFT JOIN ingredient ing on ing.ing_code = ri.ing_code
+JOIN POINT fav on fav.recipe_code = ri.recipe_code
+JOIN recipe_info rif on ri.recipe_code = rif.recipe_code
+WHERE RI.recipe_code = '134';
+----------------------------------------------------------------------------
+
+/* 후기목록 */
+-- recipe_code = 134
+-- customer_Is_Enable = 'Y'
+SELECT * 
+  FROM REVIEW
+  WHERE RECIPE_CODE = '134' 
+      AND CUSTOMER_ID IN (SELECT CUSTOMER_ID 
+                               FROM CUSTOMER  
+                             WHERE CUSTOMER_STATUS = '1' );
+--"나의" 후기 목록이라면 customer_id의 일치여부만 확인하면 될 것이고, 레시피 상세정보에서 확인하는 후기 목록이라면 recipe_code만 보면 될것같은데...
+--후기목록은 보여야합니다
+--그냥
+SELECT * FROM review WHERE recipe_code = ?
+
+/* 후기등록 */
+-- customer_id 
+-- recipe_code
+-- review_comment
+-- review_date 
+INSERT  INTO REVIEW (customer_id
+                            , recipe_code
+                            , review_comment
+                            , review_date) 
+          VALUES ('tester'
+                        , '24'
+                        , '흠~바질향이 너무 좋네요!'
+                        , sysdate
+);
+
+/* 즐겨찾기추가 */
+INSERT INTO FAVORITE (customer_id , recipe_code) VALUES ( 'tester' , 24 );
+
+/* 즐겨찾기 목록 */
+SELECT * 
+  FROM FAVORITE 
+  WHERE CUSTOMER_ID = 'tester' 
+      AND RECIPE_CODE IN (SELECT RECIPE_CODE
+                                     FROM RECIPE_INFO 
+                                   WHERE RECIPE_STATUS = '1'
+); 
+
+/* 즐겨찾기 삭제*/
+DELETE FROM FAVORITE WHERE CUSTOMER_ID = 'tester' AND RECIPE_CODE = '24' ;
+
+/* 나의 후기목록 */
+SELECT * FROM REVIEW 
+WHERE CUSTOMER_ID = 'tester' 
+  AND recipe_code IN (SELECT recipe_code 
+                               FROM RECIPE_INFO 
+                              WHERE RECIPE_STATUS = '1' ) ; 
+--"나의" 후기 목록도 보여야하지 않을까... 구매를 해야 후기를 등록할 수 있으니 구매 내역에서 레시피의 
+SELECT * FROM review WHERE customer_id = ?
+/* 나의 후기 삭제*/
+DELETE FROM REVIEW WHERE CUSTOMER_ID = 'tester' AND RECIPE_CODE = '24';
+
+
+--회원가입
+INSERT INTO customer(customer_id, customer_pwd, customer_email, customer_name, customer_phone, customer_addr, customer_stauts) VALUES ('id1','pw1','abcd@naver.com','백영민','010-1234-4321','용인시 기흥구 동백동',1);
+--이제 Postal에 대한 부분(buildingno)이 반영되어야합니다
+
+--내 정보보기
+SELECT * FROM customer WHERE customer_id = 'tester';
+
+--내 정보 수정
+UPDATE customer 
+SET customer_pwd= 'pw01'
+   ,customer_email = dbca@naver.com
+   ,customer_name = '유산슬'
+   ,customer_phone = '010-1234-5678'
+   ,customer_addr = '서울시 잠실동'
+   ,customer_status = 0
+WHERE customer_id='id1';
+--status를 0으로 바꾸면 탈퇴이기 때문에 내 정보 수정 기능에서는 UPDATE 문을 구성할때 customer_status를 SET하면 안됩니다
+
+--회원 탈퇴
+UPDATE customer 
+SET customer_status = 0  
+WHERE customer_id = 'id1';    
+--이건 맞습니다
+
+--나의 구매상세내역
+select 
+    p.customer_id,
+    p.purchase_date,
+    pd.purchase_quantity,
+    r.review_comment
+from
+    purchase p
+    join purchase_detail pd on ( p.purchase_code = pd.purchase_code)
+    left join review r on ( p.customer_id = r.customer_id and pd.recipe_code = r.recipe_code)
+    where pd.recipe_code = '134';
+--이것도 레시피 상세정보와 같은 맥락에서 필요없지않을까...
+
+--나의 구매내역
+select 
+    p.customer_id,
+    p.purchase_date,
+    pd.purchase_quantity,
+    r.review_comment
+from
+    purchase p
+    join purchase_detail pd on ( p.purchase_code = pd.purchase_code)
+    left join review r on ( p.customer_id = r.customer_id and pd.recipe_code = r.recipe_code);
+
+
+--구매하기
+INSERT INTO PURCHASE VALUES (PURCHASE_SEQ.NEXTVAL,'tester',SYSDATE); 
+INSERT INTO PURCHASE_DETAIL VALUES(PURCHASE_SEQ.CURRVAL,'134',3);
+--레시피 재료에서 sequence가 아닌 max(ing_code)+1을 사용하기 때문에, 일관적으로 갈 필요가 있음. 어느쪽으로 맞출지 이야기해야함
+
+--R&D 계정추가 조회 수정 삭제(비활성화)
+INSERT INTO rd(rd_id, rd_pwd, rd_team_name, rd_phone, rd_manager_name, rd_status) VALUES ("id1", "p1", "AT", "010-1234-4861", "홍길동", '1'); 
+SELECT rd_id, rd_pwd FROM rd; 
+UPDATE rd SET rd_pwd = "p12" WHERE rd_id = "id1"; --rd_status와 rd_id를 제외한 모든 칼럼을 수정할 것
+UPDATE rd SET rd_status = 0 WHERE rd_id = "id1";
+
+
+--로긴
+SELECT id, pwd 
+FROM customer where id = '?';
+
+
+-------------
+-- 레시피 등록
+-------------
+-- 0. 검증 쿼리 (레시피명)
+SELECT COUNT(1) cnt FROM RECIPE_INFO WHERE RECIPE_NAME = '돈까스냉면';
+
+-- 1. 레시피 재료 정보를 INSERT 한다.
+-- SELECT ING_CODE FROM INGREDIENT WHERE ING_NAME = '돼지고기';
+
+MERGE INTO INGREDIENT 
+USING DUAL
+   ON (ING_NAME = '돼지고기')
+WHEN NOT MATCHED THEN
+    INSERT (ING_CODE, ING_NAME) 
+    VALUES ((SELECT MAX(ING_CODE) + 1 FROM INGREDIENT), '돼지고기');
+
+-- 2. 재료 코드 리스트를 조회한다.
+SELECT ING_CODE FROM INGREDIENT WHERE ING_NAME IN ('돼지고기', '빵가루', '계란', '밀가루');
+-> 16,26,65,178
+
+-- 3. 레시피 기본정보를 insert 한다.
+INSERT INTO RECIPE_INFO VALUES((SELECT MAX(RECIPE_CODE) + 1 FROM RECIPE_INFO), '레시피명', '요리설명', 1000, '', 'Y', 'id9');
+
+-- 4. 레시피 코드를 조회한다.
+SELECT RECIPE_CODE FROM RECIPE_INFO WHERE RECIPE_NAME = '돈까스';  
+-> 49
+
+-- 5. 재료코드 리스트 반복문을 수행하면서 (레시피코드 - 재료코드) 레시피 재료테이블에 등록한다.
+for ( ING_CODE list )
+INSERT INTO RECIPE_INGREDIENT VALUES (49, 16);
+INSERT INTO RECIPE_INGREDIENT VALUES (49, 26);
+INSERT INTO RECIPE_INGREDIENT VALUES (49, 65);
+INSERT INTO RECIPE_INGREDIENT VALUES (49, 178);
+
+
+-------------
+-- 레시피 수정
+-------------
+-- SELECT * FROM RECIPE_INFO WHERE RECIPE_NAME = '돈까스';
+-- RECIPE_CODE : 49
+
+-- 1. 레시피 재료 데이터 삭제 (수정하려는 레시피 코드 기준으로)
+-- SELECT * FROM RECIPE_INGREDIENT WHERE RECIPE_CODE = 49;
+DELETE FROM RECIPE_INGREDIENT WHERE RECIPE_CODE = 49;
+
+-- 2. 레시피 내용 UPDATE
+UPDATE RECIPE_INFO SET 업데이트~ WHERE RECIPE_NAME = '돈까스';
+
+-- 3. 재료 등록
+
+-- 3-1. 레시피 재료 정보를 INSERT 한다.
+SELECT ING_CODE FROM INGREDIENT WHERE ING_NAME = '새우살';
+MERGE INTO INGREDIENT 
+USING DUAL
+   ON (ING_NAME = '새우살')
+WHEN NOT MATCHED THEN
+    INSERT (ING_CODE, ING_NAME) 
+    VALUES ((SELECT MAX(ING_CODE) + 1 FROM INGREDIENT), '새우살');
+
+-- 3-2. 재료 코드 리스트를 조회한다.
+SELECT ING_CODE FROM INGREDIENT WHERE ING_NAME IN ('돼지고기','빵가루','계란','밀가루');
+-> 16,26,65,178
+
+-- 3-3. 재료코드 리스트 반복문을 수행하면서 (레시피코드 - 재료코드) 레시피 재료테이블에 등록한다.
+for ( ING_CODE list )
+INSERT INTO RECIPE_INGREDIENT VALUES (49, 16);
+INSERT INTO RECIPE_INGREDIENT VALUES (49, 26);
+INSERT INTO RECIPE_INGREDIENT VALUES (49, 65);
+INSERT INTO RECIPE_INGREDIENT VALUES (49, 178);
+
+
+-------------
+-- 레시피 삭제
+-------------
+SELECT * FROM RECIPE_INFO WHERE RECIPE_NAME = '돈까스';
+RECIPE_CODE : 49
+
+-- 1. 레시피 재료 데이터 삭제 (수정하려는 레시피 코드 기준으로)
+DELETE FROM RECIPE_INGREDIENT WHERE RECIPE_CODE = 49;
+
+— 2. 레시피 삭제
+DELETE FROM RECIPE_INFO WHERE RECIPE_CODE = 49;
+
+——————
+—————— 레시피 목록보기
+——————
+SELECT recipe_code 코드번호, recipe_name 레시피명 FROM RECIPE_INFO;
+
+--추천 레시피
+SELECT 
+	RECIPE_NAME,RECIPE_SUMM, RECIPE_PRICE, RECIPE_PROCESS 
+FROM 
+	RECIPE_INFO 
+WHERE 
+	RECIPE_CODE=(
+		SELECT RECIPE_CODE 
+		FROM (
+			SELECT RECIPE_CODE 
+			FROM POINT 
+			ORDER BY LIKE_COUNT DESC, DISLIKE_COUNT ASC
+		) 
+		WHERE ROWNUM=1
+	);
+--포인트 select시 후기 count까지한다면
+--추천 레시피 기능 : 좋아요 개수가 가장 많고, 
+--만약 좋아요 개수가 같다면 싫어요 개수가 가장 적으며, 
+--만약 둘 다 같다면 후기등록 개수가 가장 많은 레시피 정보를 보여준다.
+--추천 레시피로 보여줄 레시피 정보 SELECT
+SELECT recipe_name, recipe_summ, recipe_price, recipe_process
+FROM recipe_info
+WHERE
+--아래 서브쿼리에서 결과로 반환되는 recipe_code가 추천 레시피의 recipe_code이다
+    recipe_code = (
+    --정렬한 select 결과에서 1행만 가져온다
+        SELECT
+            recipe_code
+        FROM
+        --좋아요 개수, 싫어요 개수, 후기등록 개수를 기준으로 정렬
+            (
+                SELECT
+                    recipe_code
+                FROM
+                    point p
+                ORDER BY
+                    like_count DESC,
+                    dislike_count ASC,
+                    (
+                        SELECT
+                            COUNT(*)
+                        FROM
+                            review
+                        WHERE
+                            recipe_code = p.recipe_code
+                    ) DESC
+            )
+        WHERE
+            ROWNUM = 1
+    );
+--스칼라 쿼리를 order by에서 사용하는 것이 바람직한 방법인지, 만약 다른 방법(SQL문으로 해결을 보는)이 있다면 어떤 것이 있을지 강사님께 여쭤보자
+--이대로 가라고 하십니다
+
+----------------------------------------------------------------------------------------------위에거가 동작하기때문에 아래는 필요없을듯
+--좋아요 개수가 가장 많고 싫어요 개수가 가장 적은 레시피의 첫줄의 레시피코드와 일치?
+--후기가 가장 많은 레시피정보
+SELECT RECIPE_NAME,RECIPE_SUMM, RECIPE_PRICE, RECIPE_PROCESS FROM RECIPE_INFO WHERE RECIPE_CODE=(SELECT MAX(RECIPE_CODE) FROM REVIEW);
+----------------------------------------------------------------------------------------------
